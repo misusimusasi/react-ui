@@ -51,6 +51,27 @@ export type RowData = {
   groupRows?: Array<string>;
 };
 
+type GroupRowData = {
+  id: string;
+  selected?: boolean;
+  disabled?: boolean;
+  error?: boolean;
+  success?: boolean;
+  expanded?: boolean;
+  expandedRowRender?: (row: RowData) => React.ReactNode;
+  overflowMenuRender?: (
+    row: RowData,
+    /** @deprecated use onVisibilityChange instead */
+    onMenuOpen?: () => void,
+    /** @deprecated use onVisibilityChange instead */
+    onMenuClose?: () => void,
+    onVisibilityChange?: (isVisible: boolean) => void,
+  ) => React.ReactNode;
+  actionRender?: (row: any) => React.ReactNode;
+  groupTitle?: string;
+  groupRows?: Array<string>;
+};
+
 export const rowList: RowData[] = [
   {
     id: '0001',
@@ -658,7 +679,7 @@ export const rowListExpanded: RowData[] = [
   },
 ];
 
-export const rowListWithGroup: RowData[] = [
+export const rowListWithGroup: Array<RowData | GroupRowData> = [
   {
     id: '0002',
     transfer_type: 'МНО',
@@ -701,16 +722,6 @@ export const rowListWithGroup: RowData[] = [
   },
   {
     id: '0001',
-    transfer_type: 'Group name',
-    expanded: false,
-    transfer_date: new Date('2020-08-06').toLocaleDateString(),
-    transfer_amount: (
-      <AmountCell>
-        <T font="Body/Body 2 Short">{numberFormatter.format(18_000_000)}</T>
-      </AmountCell>
-    ),
-    currency: 'RUB',
-    rate: 2.5,
     groupTitle: 'Группа',
     groupRows: ['0007', '0008'],
   },

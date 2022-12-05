@@ -4,7 +4,11 @@ import type { TableProps } from '#src/components/Table';
 
 const RESIZER_WIDTH = '17px';
 
-export const ResizerWrapper = styled.div<{ disabled: boolean; dimension: TableProps['dimension'] }>`
+export const ResizerWrapper = styled.div<{
+  disabled: boolean;
+  dimension: TableProps['dimension'];
+  multiLevel?: boolean;
+}>`
   position: absolute;
   right: -8px;
   z-index: 1;
@@ -30,6 +34,7 @@ export const ResizerWrapper = styled.div<{ disabled: boolean; dimension: TablePr
         return '12px 0 11px 0';
     }
   }};
+  ${({ multiLevel }) => multiLevel && 'padding: 0;'}
 `;
 
 export const Resizer = styled.div`
@@ -45,9 +50,10 @@ export function RowWidthResizer(props: {
   disabled: boolean;
   resizerState: any;
   dimension: TableProps['dimension'];
+  multiLevel?: boolean;
   onChange: (evt: { name: string; width: number; mouseUp: boolean }) => void;
 }) {
-  const { width: startWidth, name, disabled, resizerState, dimension, onChange } = props;
+  const { width: startWidth, name, disabled, resizerState, dimension, multiLevel, onChange } = props;
   const node = React.useRef(null);
   const [width, setWidth] = React.useState(startWidth);
   const [isTaken, setTaken] = React.useState(false);
@@ -104,7 +110,7 @@ export function RowWidthResizer(props: {
   };
 
   return (
-    <ResizerWrapper ref={node} disabled={disabled} dimension={dimension}>
+    <ResizerWrapper ref={node} disabled={disabled} dimension={dimension} multiLevel={multiLevel}>
       <Resizer />
     </ResizerWrapper>
   );

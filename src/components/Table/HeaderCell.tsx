@@ -15,24 +15,27 @@ import { RowWidthResizer } from './RowWidthResizer';
 import { Filter } from './filter/Filter';
 import { TitleText } from './TitleText';
 
-type HeaderCellI = {
+type HeaderCellType = {
+  column: Column & { resizerWidth: number };
+  index: number;
   columnsAmount: number;
   showDividerForLastColumn?: boolean;
   disableColumnResize: boolean;
-  index: number;
   dimension?: TableProps['dimension'];
   headerLineClamp: number;
   headerExtraLineClamp: number;
   spacingBetweenItems?: string;
   resizerState: any;
-  handleResizeChange: any;
-  handleSort: any;
+  handleResizeChange: (props: { name: string; width: number; mouseUp: boolean }) => void;
+  handleSort: (name: string, colSort: 'asc' | 'desc' | 'initial') => void;
   multipleSort?: boolean;
+  multiLevel?: boolean;
 };
 
 const DEFAULT_COLUMN_WIDTH = 100;
 
 export const HeaderCellComponent = ({
+  column,
   columnsAmount,
   showDividerForLastColumn,
   disableColumnResize,
@@ -40,40 +43,37 @@ export const HeaderCellComponent = ({
   headerExtraLineClamp,
   spacingBetweenItems,
   dimension,
-  name,
-  title,
-  extraText,
-  width = DEFAULT_COLUMN_WIDTH,
-  resizerWidth,
   resizerState,
   handleResizeChange,
   handleSort,
   multipleSort,
-  cellAlign = 'left',
-  sortable = false,
-  sort,
-  sortOrder,
-  disableResize = false,
-  renderFilter,
-  renderFilterIcon,
-  onFilterMenuClickOutside,
-  onFilterMenuClose,
-  onFilterMenuOpen,
+  multiLevel,
   index,
-}: HeaderCellI & Column & { resizerWidth: number }) => {
-  const cellRef = React.createRef<HTMLDivElement>();
+}: HeaderCellType) => {
+  const {
+    name,
+    title,
+    extraText,
+    width = DEFAULT_COLUMN_WIDTH,
+    resizerWidth,
+    cellAlign = 'left',
+    sortable = false,
+    sort,
+    sortOrder,
+    disableResize = false,
+    renderFilter,
+    renderFilterIcon,
+    onFilterMenuClickOutside,
+    onFilterMenuClose,
+    onFilterMenuOpen,
+  } = column;
   const iconSize = dimension === 's' || dimension === 'm' ? 16 : 20;
   const defaultSpacer = dimension === 'l' || dimension === 'xl' ? '16px' : '12px';
   const spacer = spacingBetweenItems || defaultSpacer;
+  const cellRef = React.createRef<HTMLDivElement>();
 
   return (
-    <HeaderCell
-      key={`head_${name}`}
-      dimension={dimension}
-      style={{ width: width, minWidth: width }}
-      className="th"
-      ref={cellRef}
-    >
+    <HeaderCell dimension={dimension} style={{ width: width, minWidth: width }} className="th" ref={cellRef}>
       <HeaderCellContent cellAlign={cellAlign}>
         <HeaderCellTitle
           sort={sort || 'initial'}
@@ -114,6 +114,7 @@ export const HeaderCellComponent = ({
           disabled={disableResize || disableColumnResize}
           resizerState={resizerState}
           dimension={dimension}
+          multiLevel={multiLevel}
         />
       )}
       {index === columnsAmount - 1 && showDividerForLastColumn && (
@@ -124,6 +125,7 @@ export const HeaderCellComponent = ({
           disabled={disableResize || disableColumnResize}
           resizerState={resizerState}
           dimension={dimension}
+          multiLevel={multiLevel}
         />
       )}
     </HeaderCell>

@@ -71,7 +71,7 @@ export const VirtualBody = React.forwardRef<HTMLDivElement, VirtualBodyProps>(
         observer.observe(preloadRef.current);
       }
       return () => observer.disconnect();
-    }, [wrapperRef.current, preloadRef.current]);
+    }, [wrapperRef.current, preloadRef.current, loadMoreRows]);
 
     let startNode = Math.floor(scrollTop / childHeight) - renderAhread;
     startNode = Math.max(0, startNode);

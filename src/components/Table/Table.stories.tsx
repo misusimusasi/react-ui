@@ -538,35 +538,28 @@ const Template6: ComponentStory<typeof Table> = ({ rowList, columnList, ...args 
   );
 };
 
-const virtualRowList1 = [...Array(100).keys()].map((item, index) => ({
-  id: String(index),
-  transfer_number: index,
-  transfer_date: new Date('2020-08-06').toLocaleDateString(),
-}));
-
-const Template7: ComponentStory<typeof Table> = (args) => {
-  const [cols, setCols] = React.useState([...args.columnList]);
-  const [rows, setRows] = React.useState([...virtualRowList1]);
+const Template7: ComponentStory<typeof Table> = ({ rowList, columnList, ...args }) => {
+  const [cols, setCols] = React.useState([...columnList]);
+  const [rows, setRows] = React.useState([...rowList]);
   const handleResize = ({ name, width }: { name: string; width: string }) => {
     const newCols = cols.map((col) => (col.name === name ? { ...col, width } : col));
     setCols(newCols);
   };
-  console.log(rows.length);
-  const handleMore = () => {
-    console.log('more');
+  const loadMoreRows = () => {
     let newRows = [...Array(30).keys()].map((item, index) => ({
-      id: String(Date.now() + index),
-      transfer_number: Date.now(),
+      id: String(index + rows.length),
+      transfer_number: index + rows.length,
       transfer_date: new Date('2020-08-06').toLocaleDateString(),
     }));
     setRows([...rows, ...newRows]);
   };
+
   return (
     <Table
       {...args}
       rowList={rows}
       columnList={cols}
-      virtualScroll={{ fixedRowHeight: 40, loadMoreRows: handleMore }}
+      virtualScroll={{ fixedRowHeight: 40, loadMoreRows }}
       style={{ height: '500px' }}
       onColumnResize={handleResize}
     />

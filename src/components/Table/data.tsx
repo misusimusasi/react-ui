@@ -933,7 +933,7 @@ export const rowListMenu: RowData[] = [
   },
 ];
 
-export const virtualRowList = [...Array(1000).keys()].map((item, index) => ({
+export const virtualRowList = [...Array(100).keys()].map((item, index) => ({
   id: String(index),
   transfer_number: index,
   transfer_date: new Date('2020-08-06').toLocaleDateString(),

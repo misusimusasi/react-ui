@@ -228,6 +228,7 @@ export interface TableProps extends React.HTMLAttributes<HTMLDivElement> {
      * все строки должны быть одной фиксированной высоты
      */
     fixedRowHeight: number;
+    loadMoreRows?: () => void;
   };
   /** Объект локализации - позволяет перезадать текстовые константы используемые в компоненте,
    * по умолчанию значения констант берутся из темы в соответствии с параметром currentLocale, заданном в теме
@@ -709,6 +710,7 @@ export const Table: React.FC<TableProps> = ({
         rowList={tableRows}
         childHeight={virtualScroll.fixedRowHeight}
         renderRow={renderRow}
+        loadMoreRows={virtualScroll.loadMoreRows}
         ref={scrollBodyRef}
         className="tbody"
       />

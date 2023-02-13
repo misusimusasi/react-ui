@@ -4,9 +4,24 @@ import { refSetter } from '#src/components/common/utils/refSetter';
 
 import { ScrollTableBody } from './style';
 
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: hidden;
+`;
+
 const Spacer = styled.div`
   display: flex;
   flex: 0 0 auto;
+  position: relative;
+`;
+
+const PreloadZone = styled.div`
+  position: absolute;
+  bottom: 0;
+  visibility: hidden;
+  width: 100%;
 `;
 
 interface VirtualBodyProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -15,12 +30,15 @@ interface VirtualBodyProps extends React.HTMLAttributes<HTMLDivElement> {
   renderAhread?: number;
   rowList: any[];
   renderRow: (row: any, index: number) => React.ReactNode;
+  loadMoreRows?: () => void;
 }
 
 export const VirtualBody = React.forwardRef<HTMLDivElement, VirtualBodyProps>(
-  ({ height, childHeight, renderAhread = 20, rowList, renderRow, ...props }, ref) => {
+  ({ height, childHeight, renderAhread = 10, rowList, renderRow, loadMoreRows, ...props }, ref) => {
     const [scrollTop, setScrollTop] = React.useState(0);
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const preloadRef = React.useRef<HTMLDivElement>(null);
 
     const handleScroll = (e: any) => {
       requestAnimationFrame(() => {
@@ -35,6 +53,25 @@ export const VirtualBody = React.forwardRef<HTMLDivElement, VirtualBodyProps>(
       scrollContainer?.addEventListener('scroll', handleScroll);
       return () => scrollContainer?.removeEventListener('scroll', handleScroll);
     }, []);
+
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry: any) => {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.0) {
+          loadMoreRows?.();
+        }
+      });
+    };
+
+    React.useLayoutEffect(() => {
+      const observer = new IntersectionObserver(handleIntersection, {
+        root: wrapperRef.current,
+        threshold: [0, 0.1, 1.0],
+      });
+      if (preloadRef.current) {
+        observer.observe(preloadRef.current);
+      }
+      return () => observer.disconnect();
+    }, [wrapperRef.current, preloadRef.current]);
 
     let startNode = Math.floor(scrollTop / childHeight) - renderAhread;
     startNode = Math.max(0, startNode);
@@ -57,11 +94,15 @@ export const VirtualBody = React.forwardRef<HTMLDivElement, VirtualBodyProps>(
     );
 
     return (
-      <ScrollTableBody style={{ height }} ref={refSetter(ref, scrollContainerRef)} {...props}>
-        <Spacer style={{ minHeight: topPadding }} />
-        {visibleChildren}
-        <Spacer style={{ minHeight: bottomPadding }} />
-      </ScrollTableBody>
+      <Wrapper ref={refSetter(ref, wrapperRef)}>
+        <ScrollTableBody style={{ height }} ref={scrollContainerRef} {...props}>
+          <Spacer style={{ minHeight: topPadding }} />
+          {visibleChildren}
+          <Spacer style={{ minHeight: bottomPadding }}>
+            <PreloadZone ref={preloadRef} style={{ minHeight: childHeight * renderAhread + 'px' }} />
+          </Spacer>
+        </ScrollTableBody>
+      </Wrapper>
     );
   },
 );

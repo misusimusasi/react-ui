@@ -556,7 +556,9 @@ const Template7: ComponentStory<typeof Table> = ({ rowList, columnList, ...args 
       transfer_number: index + rows.length,
       transfer_date: new Date('2020-08-06').toLocaleDateString(),
     }));
-    setRows([...rows, ...newRows]);
+    setTimeout(() => {
+      setRows([...rows, ...newRows]);
+    }, 1500);
   };
 
   return (

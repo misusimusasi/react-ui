@@ -550,7 +550,7 @@ const Template7: ComponentStory<typeof Table> = ({ rowList, columnList, ...args 
     const newCols = cols.map((col) => (col.name === name ? { ...col, width } : col));
     setCols(newCols);
   };
-  const loadMoreRows = () => {
+  const loadMoreItems = () => {
     let newRows = [...Array(30).keys()].map((item, index) => ({
       id: String(index + rows.length),
       transfer_number: index + rows.length,
@@ -566,7 +566,55 @@ const Template7: ComponentStory<typeof Table> = ({ rowList, columnList, ...args 
       {...args}
       rowList={rows}
       columnList={cols}
-      virtualScroll={{ fixedRowHeight: 40, loadMoreRows }}
+      virtualScroll={{ fixedRowHeight: 40 }}
+      style={{ height: '500px' }}
+      onColumnResize={handleResize}
+    />
+  );
+};
+
+const Template72: ComponentStory<typeof Table> = ({ rowList, columnList, ...args }) => {
+  const [cols, setCols] = React.useState([...columnList]);
+  const [rows, setRows] = React.useState([...rowList]);
+  const handleResize = ({ name, width }: { name: string; width: string }) => {
+    const newCols = cols.map((col) => (col.name === name ? { ...col, width } : col));
+    setCols(newCols);
+  };
+  // const loadMoreItems = () => {
+  // let newRows = [...Array(30).keys()].map((item, index) => ({
+  //   id: String(index + rows.length),
+  //   transfer_number: index + rows.length,
+  //   transfer_date: new Date('2020-08-06').toLocaleDateString(),
+  // }));
+  //   setTimeout(() => {
+  //     setRows([...rows, ...newRows]);
+  //   }, 1500);
+  // };
+
+  const loadMoreItems = (startIndex: number, stopIndex: number): Promise<any> => {
+    console.log({ startIndex, stopIndex });
+    // for (let index = startIndex; index <= stopIndex; index++) {
+    //   itemStatusMap[index] = LOADING;
+    // }
+    return new Promise((resolve) =>
+      setTimeout(() => {
+        let newRows = [...Array(stopIndex - startIndex).keys()].map((item, index) => ({
+          id: String(index + rows.length),
+          transfer_number: index + rows.length,
+          transfer_date: new Date('2020-08-06').toLocaleDateString(),
+        }));
+        setRows([...rows, ...newRows]);
+        resolve('');
+      }, 2500),
+    );
+  };
+
+  return (
+    <Table
+      {...args}
+      rowList={rows}
+      columnList={cols}
+      virtualScroll={{ fixedRowHeight: 40, itemCount: 1000, loadMoreItems }}
       style={{ height: '500px' }}
       onColumnResize={handleResize}
     />
@@ -909,6 +957,13 @@ VirtualScroll.parameters = {
     },
   },
 };
+
+export const VirtualScrollInfinite = Template72.bind({});
+VirtualScrollInfinite.args = {
+  rowList: virtualRowList,
+  columnList: virtualColumnList,
+};
+VirtualScrollInfinite.storyName = 'Table. Виртуальный скролл бесконечный.';
 
 export const Group = Template8.bind({});
 Group.args = {

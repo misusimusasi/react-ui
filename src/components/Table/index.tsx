@@ -8,6 +8,7 @@ import { GroupRow } from '#src/components/Table/Row/GroupRow';
 import { RegularRow } from '#src/components/Table/Row/RegularRow';
 import { RowWrapper } from '#src/components/Table/Row/RowWrapper';
 
+import { InfiniteLoader } from './InfiniteLoader';
 import { HeaderCellComponent } from './HeaderCell';
 import {
   Cell,
@@ -225,7 +226,12 @@ export interface TableProps extends React.HTMLAttributes<HTMLDivElement> {
      * все строки должны быть одной фиксированной высоты
      */
     fixedRowHeight: number;
-    loadMoreRows?: () => void;
+    /** Function responsible for tracking the loaded state of each item. */
+    isItemLoaded?: (index: number) => boolean;
+    /** Callback to be invoked when more rows must be loaded. It should return a Promise that is resolved once all data has finished loading. */
+    loadMoreItems?: (startIndex: number, stopIndex: number) => Promise<void>;
+    /** Number of rows in list; can be arbitrary high number if actual number is unknown. */
+    itemCount?: number;
   };
   /** Объект локализации - позволяет перезадать текстовые константы используемые в компоненте,
    * по умолчанию значения констант берутся из темы в соответствии с параметром currentLocale, заданном в теме
@@ -602,7 +608,7 @@ export const Table: React.FC<TableProps> = ({
     );
   };
 
-  const renderGroupRow = (row: TableRow) => {
+  const renderGroupRow = (row: TableRow, loading?: boolean) => {
     const indeterminate =
       row.groupRows?.some((rowId) => rowToGroupMap[rowId].checked) &&
       row.groupRows?.some((rowId) => !rowToGroupMap[rowId].checked);
@@ -622,11 +628,12 @@ export const Table: React.FC<TableProps> = ({
         renderCell={renderCell}
         indeterminate={indeterminate}
         checked={checked}
+        loading={loading}
       />
     );
   };
 
-  const renderRegularRow = (row: TableRow) => (
+  const renderRegularRow = (row: TableRow, loading?: boolean) => (
     <RegularRow
       row={row}
       dimension={dimension}
@@ -638,6 +645,7 @@ export const Table: React.FC<TableProps> = ({
       renderBodyCell={renderBodyCell}
       onRowExpansionChange={handleExpansionChange}
       onRowSelectionChange={handleCheckboxChange}
+      loading={loading}
     />
   );
 
@@ -657,32 +665,69 @@ export const Table: React.FC<TableProps> = ({
       : index === tableRows.length - 1;
   };
 
-  const renderRow = (row: TableRow, index: number) => {
-    const isGroupRow = !!groupToRowsMap[row.id];
-    const rowInGroup = !!rowToGroupMap[row.id];
-    const visible = rowInGroup ? groupToRowsMap[rowToGroupMap[row.id].groupId].expanded : true;
-    const isLastRow = isLastVisibleRow({ row, isGroupRow, tableRows, index });
+  // const renderRow = (row: TableRow, index: number) => {
+  //   const isGroupRow = !!groupToRowsMap[row.id];
+  //   const rowInGroup = !!rowToGroupMap[row.id];
+  //   const visible = rowInGroup ? groupToRowsMap[rowToGroupMap[row.id].groupId].expanded : true;
+  //   const isLastRow = isLastVisibleRow({ row, isGroupRow, tableRows, index });
 
-    const node = (isGroupRow || visible) && (
-      <RowWrapper
-        dimension={dimension}
-        row={row}
-        underline={(isLastRow && showLastRowUnderline) || !isLastRow}
-        tableWidth={tableWidth}
-        isGroup={isGroupRow}
-        onRowClick={onRowClick}
-        onRowDoubleClick={onRowDoubleClick}
-        rowWidth={isGroupRow ? headerRef.current?.scrollWidth : undefined}
-        verticalScroll={verticalScroll}
-        scrollbar={scrollbar}
-        grey={zebraRows[row.id]?.includes('even')}
-        key={`row_${row.id}`}
-      >
-        {isGroupRow ? renderGroupRow(row) : renderRegularRow(row)}
-      </RowWrapper>
-    );
+  //   const node = (isGroupRow || visible) && (
+  //     <RowWrapper
+  //       dimension={dimension}
+  //       row={row}
+  //       underline={(isLastRow && showLastRowUnderline) || !isLastRow}
+  //       tableWidth={tableWidth}
+  //       isGroup={isGroupRow}
+  //       onRowClick={onRowClick}
+  //       onRowDoubleClick={onRowDoubleClick}
+  //       rowWidth={isGroupRow ? headerRef.current?.scrollWidth : undefined}
+  //       verticalScroll={verticalScroll}
+  //       scrollbar={scrollbar}
+  //       grey={zebraRows[row.id]?.includes('even')}
+  //       key={`row_${row.id}`}
+  //     >
+  //       {isGroupRow ? renderGroupRow(row) : renderRegularRow(row)}
+  //     </RowWrapper>
+  //   );
 
-    return node ? renderRowWrapper?.(row, index, node) ?? node : node;
+  //   return node ? renderRowWrapper?.(row, index, node) ?? node : node;
+  // };
+
+  const renderRow = (index: number) => {
+    const row = tableRows[index];
+    if (row) {
+      const isGroupRow = !!groupToRowsMap[row.id];
+      const rowInGroup = !!rowToGroupMap[row.id];
+      const visible = rowInGroup ? groupToRowsMap[rowToGroupMap[row.id].groupId].expanded : true;
+      const isLastRow = isLastVisibleRow({ row, isGroupRow, tableRows, index });
+
+      const node = (isGroupRow || visible) && (
+        <RowWrapper
+          dimension={dimension}
+          row={row}
+          underline={(isLastRow && showLastRowUnderline) || !isLastRow}
+          tableWidth={tableWidth}
+          isGroup={isGroupRow}
+          onRowClick={onRowClick}
+          onRowDoubleClick={onRowDoubleClick}
+          rowWidth={isGroupRow ? headerRef.current?.scrollWidth : undefined}
+          verticalScroll={verticalScroll}
+          scrollbar={scrollbar}
+          grey={zebraRows[row.id]?.includes('even')}
+          key={`row_${row.id}`}
+        >
+          {isGroupRow ? renderGroupRow(row, row ? false : true) : renderRegularRow(row, row ? false : true)}
+        </RowWrapper>
+      );
+
+      return node ? renderRowWrapper?.(row, index, node) ?? node : node;
+    } else {
+      return (
+        <Cell dimension={dimension} key={index}>
+          'loading'
+        </Cell>
+      );
+    }
   };
 
   const renderBody = () => {
@@ -702,18 +747,27 @@ export const Table: React.FC<TableProps> = ({
       );
     }
     return virtualScroll ? (
-      <VirtualBody
-        height={bodyHeight}
-        rowList={tableRows}
-        childHeight={virtualScroll.fixedRowHeight}
-        renderRow={renderRow}
-        loadMoreRows={virtualScroll.loadMoreRows}
-        ref={scrollBodyRef}
-        className="tbody"
-      />
+      <InfiniteLoader
+        itemCount={virtualScroll.itemCount || rowList.length}
+        loadMoreItems={virtualScroll.loadMoreItems}
+        isItemLoaded={(index) => !!tableRows[index]}
+      >
+        {(onItemsRendered: (params: { visibleStartIndex: number; visibleStopIndex: number }) => void) => (
+          <VirtualBody
+            height={bodyHeight}
+            childHeight={virtualScroll.fixedRowHeight}
+            itemCount={virtualScroll.itemCount || rowList.length}
+            renderRow={renderRow}
+            ref={scrollBodyRef}
+            className="tbody"
+            onItemsRendered={onItemsRendered}
+          />
+        )}
+      </InfiniteLoader>
     ) : (
       <ScrollTableBody ref={scrollBodyRef} className="tbody">
-        {tableRows.map((row, index) => renderRow(row, index))}
+        {/* {tableRows.map((row, index) => renderRow(row, index))} */}
+        {tableRows.map((row, index) => renderRow(index))}
       </ScrollTableBody>
     );
   };

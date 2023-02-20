@@ -9,7 +9,7 @@ type onItemsRendered = (params: onItemsRenderedParams) => void;
 
 type Props = {
   // Render prop.
-  render: (onItemsRendered: onItemsRendered) => React.ReactNode;
+  children: (onItemsRendered: onItemsRendered) => any;
 
   // Function responsible for tracking the loaded state of each item.
   isItemLoaded: (index: number) => boolean;
@@ -19,7 +19,7 @@ type Props = {
 
   // Callback to be invoked when more rows must be loaded.
   // It should return a Promise that is resolved once all data has finished loading.
-  loadMoreItems: (startIndex: number, stopIndex: number) => Promise<void>;
+  loadMoreItems?: (startIndex: number, stopIndex: number) => Promise<void>;
 
   // Minimum number of rows to be loaded at a time; defaults to 10.
   // This property can be used to batch requests to reduce HTTP requests.
@@ -27,7 +27,7 @@ type Props = {
 
   // Threshold at which to pre-fetch data; defaults to 15.
   // A threshold of 15 means that data will start loading when a user scrolls within 15 rows.
-  threshold?: number;
+  // threshold?: number;
 };
 
 function isRangeVisible({
@@ -48,13 +48,14 @@ export const InfiniteLoader = ({
   isItemLoaded,
   itemCount,
   minimumBatchSize = 10,
-  threshold = 15,
+  // threshold = 15,
   loadMoreItems,
-  render,
+  children,
 }: Props) => {
   const [lastRenderedStartIndex, setLastRenderedStartIndex] = React.useState<number>(-1);
   const [lastRenderedStopIndex, setLastRenderedStopIndex] = React.useState<number>(-1);
   const [memoizedUnloadedRanges, setMemoizedUnloadedRanges] = React.useState<Array<number>>([]);
+  const [update, forceUpdate] = React.useState({});
 
   const onItemsRendered: onItemsRendered = ({ visibleStartIndex, visibleStopIndex }: onItemsRenderedParams) => {
     setLastRenderedStartIndex(visibleStartIndex);
@@ -68,8 +69,10 @@ export const InfiniteLoader = ({
       isItemLoaded,
       itemCount,
       minimumBatchSize,
-      startIndex: Math.max(0, startIndex - threshold),
-      stopIndex: Math.min(itemCount - 1, stopIndex + threshold),
+      // startIndex: Math.max(0, startIndex - threshold),
+      startIndex: Math.max(0, startIndex),
+      // stopIndex: Math.min(itemCount - 1, stopIndex + threshold),
+      stopIndex: Math.min(itemCount - 1, stopIndex),
     });
 
     // Avoid calling load-rows unless range has changed.
@@ -87,7 +90,7 @@ export const InfiniteLoader = ({
     for (let i = 0; i < unloadedRanges.length; i += 2) {
       const startIndex = unloadedRanges[i];
       const stopIndex = unloadedRanges[i + 1];
-      const promise = loadMoreItems(startIndex, stopIndex);
+      const promise = loadMoreItems?.(startIndex, stopIndex);
       if (promise != null) {
         promise.then(() => {
           // Refresh the visible rows if any of them have just been loaded.
@@ -100,6 +103,7 @@ export const InfiniteLoader = ({
               stopIndex,
             })
           ) {
+            forceUpdate({});
             // Handle an unmount while promises are still in flight.
             // if (this._listRef == null) {
             //   return;
@@ -121,5 +125,5 @@ export const InfiniteLoader = ({
       }
     }
   };
-  return render(onItemsRendered);
+  return children(onItemsRendered);
 };

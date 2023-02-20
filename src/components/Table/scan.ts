@@ -33,13 +33,11 @@ export default function scanForUnloadedRanges({
     let loaded = isItemLoaded(index);
 
     if (!loaded) {
-      console.log('0');
       rangeStopIndex = index;
       if (rangeStartIndex === null) {
         rangeStartIndex = index;
       }
     } else if (rangeStopIndex !== null) {
-      console.log('1');
       unloadedRanges.push(rangeStartIndex, rangeStopIndex);
 
       rangeStartIndex = rangeStopIndex = null;
